@@ -1,0 +1,75 @@
+{
+  "A": {
+    "common_name": "Blakely's Red Gum",
+    "scientific_name": "Eucalyptus blakelyi",
+    "accepted_ids": [
+      "Eucalyptus blakelyi"
+    ],
+    "native": true,
+    "reason": "Native to the Canberra region",
+    "conservation_status": "Part of the Yellow Box–Blakely’s Red Gum Grassy Woodland community, which is listed as Critically Endangered in the ACT under the Nature Conservation Act 2014 and nationally under the EPBC Act.",
+    "why_it_matters": "Provides a crucial canopy structure for the ACT's ecosystem. Mature and remnant specimens develop hollows that offer vital breeding and nesting habitats for threatened local birds, such as the Glossy Black-Cockatoo and Swift Parrot.",
+    "how_to_protect": "Protecting mature remnant trees from urban development on campus, managing destructive insect psyllid outbreaks, mitigating dieback through climate-resilient provenance trials, and preventing the loss of native understory vegetation.",
+    "image": "data/images/eucalyptus_blakelyi_habit.jpg",
+    "source": "https://www.act.gov.au/environment/animals-and-plants/act-threatened-species/yellow-box-blakelys-red-gum-woodlands"
+  },
+  "B": {
+    "common_name": "Yellow Box",
+    "scientific_name": "Eucalyptus melliodora",
+    "accepted_ids": [
+      "Eucalyptus melliodora"
+    ],
+    "native": true,
+    "reason": "Native to the Canberra region",
+    "conservation_status": "Part of the Yellow Box–Blakely’s Red Gum Grassy Woodland community, which is listed as Critically Endangered in the ACT under the Nature Conservation Act 2014 and nationally under the EPBC Act.",
+    "why_it_matters": "Acts as a primary cornerstone of the regional grassy woodland biome. It produces highly nutritious nectar that supports local honeybees, gliders, and diverse bird species while providing critical soil stabilization.",
+    "how_to_protect": "Retaining large hollow-bearing trees, curbing habitat fragmentation across university planning zones, managing invasive weeds, and restoring the surrounding native perennial tussock grass and wildflower understory.",
+    "image": "data/images/eucalyptus_flowers2.jpg",
+    "source": "https://www.act.gov.au/__data/assets/pdf_file/0004/2545942/yellow-box-blakelys-red-gum-grassy-woodland-action-plan-2019.pdf"
+  },
+  "C": {
+    "common_name": "Red Ironbark",
+    "scientific_name": "Eucalyptus sideroxylon",
+    "accepted_ids": [
+      "Eucalyptus sideroxylon",
+      "Eucalyptus tricarpa"
+    ],
+    "native": false,
+    "reason": "An Australian eucalypt, but not from the Canberra region: it grows naturally from Victoria to Queensland, mainly on the western slopes and plains of NSW. It is planted in Canberra parks and streets.",
+    "conservation_status": "",
+    "why_it_matters": "",
+    "how_to_protect": "",
+    "image": "data/images/eucalyptus_sideroxylon.jpg",
+    "source": "Facts: ACT Government, Plant Species for Urban Landscape Projects in Canberra, https://www.cityservices.act.gov.au/__data/assets/pdf_file/0015/1503006/Eucalyptus-sideroxylon.pdf. Photo: Donald Hobern, Aranda ACT, CC BY 2.0, https://commons.wikimedia.org/wiki/File:Eucalyptus_sideroxylon_(23696107240).jpg"
+  },
+  "D": {
+    "common_name": "Spotted Gum",
+    "scientific_name": "Corymbia maculata",
+    "accepted_ids": [
+      "Corymbia maculata",
+      "Eucalyptus maculata"
+    ],
+    "native": false,
+    "reason": "An Australian gum, but not from the Canberra region: it grows naturally in coastal New South Wales and south-east Queensland, and is planted in Canberra.",
+    "conservation_status": "",
+    "why_it_matters": "",
+    "how_to_protect": "",
+    "image": "data/images/corymbia_maculata.jpg",
+    "source": "Facts: Wikipedia, Corymbia maculata, https://en.wikipedia.org/wiki/Corymbia_maculata; planted record in Canberra: NatureMapr. Photo: John Robert McPherson, 7th Brigade Park Chermside QLD, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:Corymbia_maculata_7th_Brigade_Park_Chermside_P1020276b.jpg"
+  },
+  "E": {
+    "common_name": "Red-flowering Yellow Gum",
+    "scientific_name": "Eucalyptus leucoxylon 'Rosea'",
+    "accepted_ids": [
+      "Eucalyptus leucoxylon",
+      "Eucalyptus petiolaris"
+    ],
+    "native": false,
+    "reason": "An Australian eucalypt, but not from the Canberra region: yellow gum grows naturally in Victoria, south-east South Australia and far south-west NSW. This red-flowered form is planted in some Canberra streets.",
+    "conservation_status": "",
+    "why_it_matters": "",
+    "how_to_protect": "",
+    "image": "data/images/eucalyptus_leucoxylon_rosea.jpg",
+    "source": "Facts: ACT Government, Plant Species for Urban Landscape Projects in Canberra, https://www.cityservices.act.gov.au/__data/assets/pdf_file/0008/1502972/Eucalyptus-leucoxylon-Rosea.pdf; Wikipedia, Eucalyptus leucoxylon. Photo: Rexness, Barossa Valley SA, CC BY-SA 2.0, https://commons.wikimedia.org/wiki/File:Eucalyptus_leucoxylon_rosea,_Maggie_Beers_Farm,_Barossa_Valley,_South_Australia_(6177516052).jpg"
+  }
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "participant_id": "U7993862",
+    "snap_no": 1,
+    "seconds_since_start": 9.6,
+    "api_top_species": "Eucalyptus camaldulensis",
+    "api_score": 0.351,
+    "api_error": "",
+    "override_used": false,
+    "card": "A",
+    "native": true,
+    "outcome": "hit"
+  },
+  {
+    "participant_id": "U7993862",
+    "snap_no": 2,
+    "seconds_since_start": 23.2,
+    "api_top_species": "Eucalyptus camaldulensis",
+    "api_score": 0.455,
+    "api_error": "",
+    "override_used": true,
+    "card": "",
+    "native": "",
+    "outcome": "unresolved"
+  }
+]
