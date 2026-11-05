@@ -10,8 +10,11 @@ students' awareness and knowledge of overlooked native plants on campus?
 researcher triggers a "native plant zone" alert (Wizard-of-Oz, no real GPS). The participant
 then has 60 seconds to find the native plants among printed cards A to E by snapping them with
 the camera. Each snap is checked with the Pl@ntNet API and gets instant feedback. The researcher
-can step in when Pl@ntNet can't place a photo. The app ends with a reveal of all cards, info
-cards for the natives and a results screen.
+can step in when Pl@ntNet can't place a photo. The app then shows a reveal of all cards and info
+cards for the natives. Next comes an **invasive species check**: the participant snaps the plant
+"growing next to" the native (a printed weed card). If it is a declared ACT pest plant, they can
+report it to ANU Green. This turns awareness into action (SDG 15.8). The report is simulated
+and nothing is sent. The app ends with a results screen.
 
 One app runs in two roles, chosen by the URL:
 
@@ -99,11 +102,15 @@ Then open both URLs, side by side if possible:
 | 4 | **P3 Challenge:** a 60-second timer, a "Found x of y" counter, points and the camera. Point the camera at a card and take a photo. | The **Phone** panel shows the live status. |
 | 5 | **Feedback:** "Native! +10", "Not native, keep looking" or "Already found". | If the phone shows "Checking…", the console shows a red **WAITING** message. Tap the card letter (A to E) that was photographed, or **Not a card**. |
 | 6 | Repeat until all natives are found or time runs out. | The **Logs** table shows each snap. |
-| 7 | **P5 Reveal** of all cards → **P6 Info cards** for the natives → **P7 Finish** with results. | — |
-| 8 | — | **Download** `snaps.json` / `output.json`, then **Reset phone status**. Reload the participant tab to start a new participant. |
+| 7 | **P5 Reveal** of all cards → **P6 Info cards** for the natives. Press **Next**. | — |
+| 8 | **P6b Invasive check:** "Check its surroundings". Snap the printed weed card. | If Pl@ntNet's top species is not on the weed list, the phone shows "Checking…" and the console shows a red **WAITING on the invasive check** message with what Pl@ntNet said. Tap **Invasive: \<weed\>** or **Not invasive**. |
+| 9 | **Invasive found:** weed name, why it is harmful, **Report to ANU Green** or **Continue without reporting**. Report shows "Report sent" (simulated). **Not invasive:** "No invasive species found" → Continue. | — |
+| 10 | **P7 Finish** with results. | — |
+| 11 | — | **Download** `snaps.json` / `output.json` / `invasive.json`, then **Reset phone status**. Reload the participant tab to start a new participant. |
 
-**No printed cards?** Show the card photos from `data/images/` on another screen (or a phone)
-and point the webcam at them, or use researcher mode and tap the card letter on the console.
+**No printed cards?** Show the card photos from `data/images/` (including `weed_willow.jpg`
+and `weed_privet.jpg` for the invasive check) on another screen (or a phone) and point the webcam
+at them, or use researcher mode and tap the card letter or weed on the console.
 
 **Testing a specific outcome:**
 
@@ -113,6 +120,8 @@ and point the webcam at them, or use researcher mode and tap the card letter on 
 | Not native | Tap **C**, **D** or **E**. |
 | Already found | Tap the same native twice. |
 | Unrecognised | Tap **Not a card**. |
+| Invasive found | On the invasive check, tap **Invasive: Willow** (or another weed). |
+| Not invasive | On the invasive check, tap **Not invasive**. |
 
 ---
 
@@ -149,6 +158,13 @@ species names Pl@ntNet may return (`accepted_ids`), native or not, reason, conse
 why it matters, how to protect it, image path and sources. The number of natives is counted from
 this file, not hard-coded.
 
+The weeds for the invasive check are defined in `data/invasive_weeds.json`, one entry per weed
+(currently willow and broad-leaf privet): names, the species names Pl@ntNet may return
+(`accepted_ids`), why it is harmful, ACT status, image path and source. Entries were checked
+against the ACT Pest Plants and Animals (Pest Plants) Declaration. Only Pl@ntNet's **top**
+species is matched against this list. That is stricter than the card check, which looks at the top 5,
+so a weed is not flagged by accident. Anything else goes to the researcher override.
+
 ---
 
 ## Project structure
@@ -156,18 +172,24 @@ this file, not hard-coded.
 ```
 app.py                  entry point: page setup and role routing (?role=...)
 screens/
-  participant.py        participant screens P0 to P7, challenge loop, scoring
-  researcher.py         trigger, live phone status, card override, logs,
+  participant.py        participant screens P0 to P7, challenge loop, scoring,
+                        invasive check
+  researcher.py         trigger, live phone status, card and invasive overrides, logs,
                         downloads, reset
 core/
   identify.py           Pl@ntNet API call; match_card() maps a species to a card A to E
+  invasive.py           loads data/invasive_weeds.json; match_weed() checks the top species
   plants.py             loads data/plants.json; list of native cards
-  state.py              shared files between the two roles (trigger, override, phone status)
-  logger.py             appends records to data/snaps.json and data/output.json
+  state.py              shared files between the two roles (trigger, overrides, phone status)
+  logger.py             appends records to data/snaps.json, output.json and invasive.json
 data/
   plants.json           the 5 cards
-  images/               card photos (also shown on the reveal and info screens)
-assets/                 scenario audio
+  invasive_weeds.json   the weeds for the invasive check
+  images/               card and weed photos (also shown on the reveal and info screens)
+assets/
+  scenario.mp3          scenario audio
+  notification.wav      alert chime
+  style.css             participant styling (bigger camera, buttons, alert animation)
 .streamlit/secrets.toml Pl@ntNet API key (not submitted)
 requirements.txt
 ```
@@ -175,8 +197,9 @@ requirements.txt
 **How the two roles communicate.** The researcher page and the participant page are separate
 Streamlit sessions, so they talk through small JSON files in `logs/`:
 
-- `state.json` is written by the researcher (trigger and override). Each event has an
-  increasing id, so old events are never handled twice.
+- `state.json` is written by the researcher (trigger, card override and invasive override). Each
+  event type has its own increasing id, so old events are never handled twice and a card tap can
+  never answer the invasive check.
 - `phone.json` is written by the participant (live status).
 
 The participant page polls with `streamlit-autorefresh` while waiting. During the challenge, the
@@ -191,7 +214,8 @@ never reads a half-written file.
 | `data/user.json` | Consent form entries (name, UID, consent) |
 | `data/snaps.json` | One record per snap: time since start, card, native, outcome, Pl@ntNet top species and score, error, whether an override was used |
 | `data/output.json` | One record per participant: time taken, points, natives found and missed, hits, false positives, snaps, overrides used |
-| `data/snap/` | The photos taken during the challenge |
+| `data/invasive.json` | One record per participant: `invasive_check_done`, `invasive_detected`, weed, Pl@ntNet top species and score, error, `override_used`, `report_tapped` (key behaviour measure), `seconds_to_decide` (result shown → Report/Continue tapped) |
+| `data/snap/` | The photos taken during the challenge, plus `<uid>_invasive.jpg` from the invasive check |
 | `logs/state.json`, `logs/phone.json` | Shared state between researcher and participant (runtime only) |
 
 To start completely fresh, delete these files. They are recreated automatically.
@@ -209,6 +233,8 @@ To start completely fresh, delete these files. They are recreated automatically.
 | Phone does not react to **Trigger** | It only reacts to triggers made **after** the consent form was submitted. Press Trigger again. |
 | No sound on the alert | Browsers (especially iPhone Safari) block autoplay; the on-screen alert still works. |
 | Pl@ntNet says "no result" or matches nothing | Expected for some photos (prints, screens, glare). The console shows **WAITING**; tap the right card letter. |
+| Invasive check always waits for the researcher | Pl@ntNet's top species for the weed print isn't in `accepted_ids`. Check `api_top_species` in `data/invasive.json` and add that name to the weed's `accepted_ids` if it's correct. |
+| No row in `invasive.json` for a participant | They left before tapping Report/Continue. A record is only written once they decide. |
 
 ## Credits
 
