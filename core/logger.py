@@ -6,6 +6,7 @@ from core.state import write_json_atomic
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 SNAPS_FILE = DATA_DIR / "snaps.json"      # one record per camera snap
 OUTPUT_FILE = DATA_DIR / "output.json"    # one record per participant
+INVASIVE_FILE = DATA_DIR / "invasive.json"  # one invasive check per participant
 
 def read_records(path):
     # Return the list stored in a JSON log file, or [] if it doesn't exist yet
@@ -25,3 +26,6 @@ def log_snap(snap):
 
 def log_summary(record):
     append_record(OUTPUT_FILE, record)
+
+def log_invasive(record):
+    append_record(INVASIVE_FILE, record)

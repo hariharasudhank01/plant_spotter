@@ -8,7 +8,9 @@ INITIAL_VALUE = {
     "trigger_id": 0,
     "triggered_at": None,
     "override_id": 0,
-    "override_card": None
+    "override_card": None,
+    "invasive_override_id": 0,
+    "invasive_override_weed": None
 }
 
 def read_state():
@@ -40,6 +42,14 @@ def set_override(card):
     state = read_state()
     state["override_id"] += 1
     state["override_card"] = card
+    write_state(state)
+
+def set_invasive_override(weed_name):
+    # weed_name is a common_name from invasive_weeds.json, or None for "not invasive".
+    # .get(): an older state.json may not have these keys yet.
+    state = read_state()
+    state["invasive_override_id"] = state.get("invasive_override_id", 0) + 1
+    state["invasive_override_weed"] = weed_name
     write_state(state)
 
 def write_phone_status(status):

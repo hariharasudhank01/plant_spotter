@@ -1,0 +1,29 @@
+{
+  "willow": {
+    "common_name": "Willow",
+    "scientific_name": "Salix spp. (excluding weeping willow)",
+    "accepted_ids": [
+      "Salix fragilis",
+      "Salix × fragilis",
+      "Salix euxina",
+      "Salix alba",
+      "Salix nigra"
+    ],
+    "why_harmful": "Spreads along creeks, chokes stream beds and lowers water quality for native plants and animals.",
+    "status": "Weed of National Significance; declared pest plant in the ACT",
+    "image": "data/images/weed_willow.jpg",
+    "source": "Weeds Australia (weeds.org.au/profiles/willows-except-weeping); ACT Pest Plants and Animals (Pest Plants) Declaration 2015 (No 1)"
+  },
+  "privet": {
+    "common_name": "Broad-leaf privet",
+    "scientific_name": "Ligustrum lucidum",
+    "accepted_ids": [
+      "Ligustrum lucidum",
+      "Ligustrum sinense"
+    ],
+    "why_harmful": "Birds spread its berries into bushland, where it crowds out native plants and reduces food and habitat for native animals.",
+    "status": "Declared pest plant in the ACT",
+    "image": "data/images/weed_privet.jpg",
+    "source": "NSW WeedWise (weeds.dpi.nsw.gov.au/Weed/Privetbroadleaf); ACT Pest Plants and Animals (Pest Plants) Declaration 2015 (No 1)"
+  }
+}

@@ -17,8 +17,8 @@ One app runs in two roles, chosen by the URL:
 
 | Role | URL | Runs on |
 |---|---|---|
-| Researcher console | `http://localhost:8501/?role=researcher` | Laptop browser |
-| Participant app | `http://localhost:8501/?role=participant` (or the tunnel URL on a phone) | Phone, or a second browser tab |
+| Researcher console | `http://localhost:8501/?role=admin` | Laptop browser |
+| Participant app | `http://localhost:8501/?role=user` (or the tunnel URL on a phone) | Phone, or a second browser tab |
 
 ---
 
@@ -84,8 +84,8 @@ streamlit run app.py
 
 Then open both URLs, side by side if possible:
 
-- **Researcher:** <http://localhost:8501/?role=researcher>
-- **Participant:** <http://localhost:8501/?role=participant>
+- **Researcher:** <http://localhost:8501/?role=admin>
+- **Participant:** <http://localhost:8501/?role=user>
 
 ---
 
@@ -128,14 +128,14 @@ Cloudflare tunnel.
    cloudflared tunnel --url http://localhost:8501
    ```
 3. Cloudflared prints a URL like `https://something-random.trycloudflare.com`. On the phone,
-   open that URL with `?role=participant` added to the end, and allow camera access.
-4. Keep the researcher console on the laptop at `http://localhost:8501/?role=researcher`.
+   open that URL with `?role=user` added to the end, and allow camera access.
+4. Keep the researcher console on the laptop at `http://localhost:8501/?role=admin`.
 
 ---
 
 ## Settings
 
-All settings are at the top of `screens/participant.py`:
+Challenge settings are at the top of `screens/participant.py`:
 
 | Setting | Default | Meaning |
 |---|---|---|
@@ -157,7 +157,8 @@ this file, not hard-coded.
 app.py                  entry point: page setup and role routing (?role=...)
 screens/
   participant.py        participant screens P0 to P7, challenge loop, scoring
-  researcher.py         trigger, live phone status, card override, logs, downloads, reset
+  researcher.py         trigger, live phone status, card override, logs,
+                        downloads, reset
 core/
   identify.py           Pl@ntNet API call; match_card() maps a species to a card A to E
   plants.py             loads data/plants.json; list of native cards

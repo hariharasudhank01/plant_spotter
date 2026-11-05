@@ -7,9 +7,10 @@ import time
 from streamlit_autorefresh import st_autorefresh
 
 from core.identify import identify_plant, match_card
+from core.invasive import match_weed, find_weed
 from core.plants import load_plants, native_cards
 from core.state import read_state, write_phone_status
-from core.logger import log_snap, log_summary
+from core.logger import log_snap, log_summary, log_invasive
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 IMAGE_DIR = PROJECT_ROOT / "data" / "snap"
@@ -19,7 +20,7 @@ CHECK_MODE = "api"          # "api": Pl@ntNet decides, researcher override as fa
                             # "researcher": every snap waits for the researcher's tap
 CHALLENGE_SECONDS = 60
 POINTS_PER_NATIVE = 10
-POST_QUIZ_URL = ""          # TODO: paste the Google Form post-quiz link here
+POST_QUIZ_URL = ""         
 
 def read_json(filename):
     if os.path.exists(filename):
@@ -34,6 +35,10 @@ def write_json(filename, data):
         json.dump(data, file, indent=4)
 
 def page_setup():
+    # st.html with only <style> takes no space on the page
+    css_file = ASSETS_DIR / "style.css"
+    if css_file.exists():
+        st.html(f"<style>{css_file.read_text()}</style>")
     st.title("ANU Campus Plant Spotter")
 
 def consent_form():
@@ -99,13 +104,32 @@ def start_challenge():
     st.session_state.snaps = []        # one dict per snap (also logged to data/snaps.json)
     st.session_state.pending = None    # a snap waiting for the researcher's override
     st.session_state.feedback = None   # ("success" / "warning" / "info", message)
+    st.session_state.paused_total = 0  # seconds the timer was paused (checking a snap)
+    st.session_state.pause_started = None
     st.session_state.screen = "challenge"
+
+# The timer pauses while a snap is being checked (Pl@ntNet call or waiting for the
+# researcher's override), so checking time is not taken from the participant.
+def pause_timer():
+    st.session_state.pause_started = time.time()
+
+def resume_timer():
+    if st.session_state.pause_started is not None:
+        st.session_state.paused_total += time.time() - st.session_state.pause_started
+        st.session_state.pause_started = None
+
+def elapsed_seconds():
+    # Challenge time used so far, not counting pauses
+    paused = st.session_state.paused_total
+    if st.session_state.pause_started is not None:
+        paused += time.time() - st.session_state.pause_started
+    return time.time() - st.session_state.start_time - paused
 
 def handle_new_photo(picture):
     snap = {
         "participant_id": st.session_state.uid,
         "snap_no": len(st.session_state.snaps) + 1,
-        "seconds_since_start": round(time.time() - st.session_state.start_time, 1),
+        "seconds_since_start": round(elapsed_seconds(), 1),   # challenge time, pauses excluded
         "api_top_species": "",
         "api_score": "",
         "api_error": "",
@@ -166,12 +190,14 @@ def score_snap(card, snap):
 def timer_panel():
     # Re-runs only this function every second, so the camera and the API call are not interrupted
     natives = native_cards()
-    left = CHALLENGE_SECONDS - (time.time() - st.session_state.start_time)
+    left = CHALLENGE_SECONDS - elapsed_seconds()
+    paused = st.session_state.pause_started is not None
 
     # Researcher override arrived?
     if st.session_state.pending:
         state = read_state()
         if state["override_id"] > st.session_state.pending["override_from"]:
+            resume_timer()
             score_snap(state["override_card"], st.session_state.pending["snap"])
             st.session_state.pending = None
             st.rerun()                 # full rerun: show feedback and a fresh camera
@@ -187,12 +213,22 @@ def timer_panel():
         "points": st.session_state.points,
         "seconds_left": int(left),
         "waiting_for_override": st.session_state.pending is not None,
+        "timer_paused": paused,
     })
 
-    st.progress(left / CHALLENGE_SECONDS, text=f"{int(left)} s left")
+    timer_text = f"{int(left)} s left" + (" (paused)" if paused else "")
+    st.progress(left / CHALLENGE_SECONDS, text=timer_text)
     col1, col2 = st.columns(2)
     col1.metric("Found", f"{len(st.session_state.found)} of {len(natives)}")
     col2.metric("Points", st.session_state.points)
+
+def big_camera():
+    st.markdown("""<style>
+        [data-testid="stMainBlockContainer"] {padding-left: 0.5rem; padding-right: 0.5rem;}
+        [data-testid="stCameraInputWebcamStyledBox"] {height: 65vh !important;}
+        [data-testid="stCameraInputWebcamStyledBox"] video {
+            width: 100% !important; height: 100% !important; object-fit: contain;}
+    </style>""", unsafe_allow_html=True)
 
 def challenge_screen():
     if len(st.session_state.found) == len(native_cards()):
@@ -215,12 +251,16 @@ def challenge_screen():
         return
 
     # A new key after every snap gives a fresh camera (no "Clear photo" tap needed)
+    big_camera()
     picture = st.camera_input("Snap a plant",
                               key=f"camera_{len(st.session_state.snaps)}")
     if picture is not None and picture.file_id != st.session_state.get("last_saved"):
         st.session_state.last_saved = picture.file_id
+        pause_timer()                  # checking time doesn't count against the participant
         with st.spinner("Checking..."):
             handle_new_photo(picture)
+        if not st.session_state.pending:
+            resume_timer()             # answered; if waiting for the researcher, stay paused
         st.rerun()                     # redraw with feedback and a fresh camera
 
 def save_output():
@@ -250,8 +290,7 @@ def finish_challenge(timed_out):
         st.session_state.snaps.append(snap)
         log_snap(snap)
         st.session_state.pending = None
-    elapsed = time.time() - st.session_state.start_time
-    st.session_state.total_seconds = round(min(elapsed, CHALLENGE_SECONDS), 1)
+    st.session_state.total_seconds = round(min(elapsed_seconds(), CHALLENGE_SECONDS), 1)
     st.session_state.timed_out = timed_out
     st.session_state.screen = "reveal"
     save_output()
@@ -318,8 +357,128 @@ def info_screen():
             st.markdown(f"**Why it matters:** {plant['why_it_matters']}")
             st.markdown(f"**How to protect it:** {plant['how_to_protect']}")
 
-    if st.button("Finish", type="primary"):
-        go_to("done")
+    if st.button("Next", type="primary"):
+        start_invasive_check()
+        go_to("invasive")
+
+def start_invasive_check():
+    # One invasive check per participant, after the info screen (evaluated flow)
+    st.session_state.invasive = {
+        "stage": "prompt",           # prompt -> (waiting) -> result -> (reported)
+        "weed": None,                # weed dict from invasive_weeds.json, or None
+        "override_from": 0,          # so only a NEW researcher tap counts
+        "result_shown_at": None,     # start of seconds_to_decide
+        "record": {                  # logged to data/invasive.json
+            "participant_id": st.session_state.uid,
+            "invasive_check_done": False,
+            "invasive_detected": "",
+            "weed": "",
+            "api_top_species": "",
+            "api_score": "",
+            "api_error": "",
+            "override_used": False,
+            "report_tapped": False,
+            "seconds_to_decide": "",
+        },
+    }
+
+def write_invasive_status(waiting):
+    record = st.session_state.invasive["record"]
+    write_phone_status({"participant_id": st.session_state.uid, "screen": "invasive",
+                        "found": len(st.session_state.found),
+                        "points": st.session_state.points,
+                        "waiting_for_invasive_override": waiting,
+                        "api_top_species": record["api_top_species"]})
+
+def handle_invasive_photo(picture):
+    check = st.session_state.invasive
+    record = check["record"]
+
+    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(IMAGE_DIR / f"{record['participant_id']}_invasive.jpg", "wb") as f:
+        f.write(picture.getvalue())
+
+    if CHECK_MODE == "api":
+        results, error = identify_plant(picture.getvalue())
+        if results:
+            record["api_top_species"] = results[0][0]
+            record["api_score"] = round(results[0][1], 3)
+        record["api_error"] = error or ""
+
+    weed = match_weed(record["api_top_species"])
+    if weed is None:
+        # Not on the weed list, or Pl@ntNet failed on the print: the researcher decides
+        record["override_used"] = True
+        check["override_from"] = read_state().get("invasive_override_id", 0)
+        check["stage"] = "waiting"
+        write_invasive_status(waiting=True)
+    else:
+        show_invasive_result(weed)
+
+def show_invasive_result(weed):
+    # Same for Pl@ntNet and the override. The decision timer starts here.
+    check = st.session_state.invasive
+    check["weed"] = weed
+    check["record"]["invasive_detected"] = weed is not None
+    check["record"]["weed"] = weed["common_name"] if weed else ""
+    check["result_shown_at"] = time.time()
+    check["stage"] = "result"
+    write_invasive_status(waiting=False)
+
+def finish_invasive_check(report_tapped):
+    check = st.session_state.invasive
+    record = check["record"]
+    record["invasive_check_done"] = True
+    record["report_tapped"] = report_tapped
+    record["seconds_to_decide"] = round(time.time() - check["result_shown_at"], 1)
+    log_invasive(record)
+
+def invasive_screen():
+    check = st.session_state.invasive
+    st.header("Check its surroundings")
+
+    if check["stage"] == "prompt":
+        st.write("Invasive weeds can crowd out native plants. "
+                 "Snap the plant growing next to it.")
+        big_camera()
+        picture = st.camera_input("Snap the plant next to it", key="invasive_camera")
+        if picture is not None:
+            with st.spinner("Checking..."):
+                handle_invasive_photo(picture)
+            st.rerun()
+
+    elif check["stage"] == "waiting":
+        st_autorefresh(interval=2000, key="invasive_poll")   # poll for the researcher's tap
+        st.info("Checking...")
+        state = read_state()
+        if state.get("invasive_override_id", 0) > check["override_from"]:
+            show_invasive_result(find_weed(state["invasive_override_weed"]))
+            st.rerun()
+
+    elif check["stage"] == "result":
+        weed = check["weed"]
+        if weed:
+            st.error(f"Invasive species found: **{weed['common_name']}**")
+            st.markdown(f"*{weed['scientific_name']}*")
+            st.write(weed["why_harmful"])
+            if st.button("Report to ANU Green", type="primary"):
+                finish_invasive_check(report_tapped=True)
+                check["stage"] = "reported"
+                st.rerun()
+            if st.button("Continue without reporting"):
+                finish_invasive_check(report_tapped=False)
+                go_to("done")
+        else:
+            st.success("No invasive species found")
+            if st.button("Continue", type="primary"):
+                finish_invasive_check(report_tapped=False)
+                go_to("done")
+
+    else:                              # "reported": simulated, nothing is sent anywhere
+        st.success("Report sent to ANU Green ✅")
+        st.caption("Prototype: no report is actually sent.")
+        if st.button("Continue", type="primary"):
+            go_to("done")
 
 def done_screen():
     # P7: results and the post-quiz link
@@ -352,9 +511,15 @@ def done_screen():
 
 def alert_screen():
     st.toast("You've entered a native plant zone!")
+    if os.path.exists(os.path.join(ASSETS_DIR, "notification.wav")):
+        # Hide the player, keep the sound. This CSS only exists while the alert screen shows.
+        st.markdown("<style>[data-testid='stAudio'] {display: none;}</style>",
+                    unsafe_allow_html=True)
+        st.audio(os.path.join(ASSETS_DIR, "notification.wav"), autoplay=True)
 
-    st.header("Native plant zone")
-    st.write("Few native plants are around you. Can you find them all?")
+    with st.container(key="zone_alert"):           # styled by .st-key-zone_alert
+        st.header("Native plant zone")
+        st.write("Few native plants are around you. Can you find them all?")
 
     if st.button("Start challenge", type="primary"):
         start_challenge()
@@ -404,5 +569,7 @@ def show():
         reveal_screen()
     elif screen == "info":
         info_screen()
+    elif screen == "invasive":
+        invasive_screen()
     elif screen == "done":
         done_screen()

@@ -1,0 +1,26 @@
+[
+  {
+    "participant_id": "U7781798",
+    "invasive_check_done": true,
+    "invasive_detected": false,
+    "weed": "",
+    "api_top_species": "Eucalyptus leucoxylon",
+    "api_score": 0.923,
+    "api_error": "",
+    "override_used": true,
+    "report_tapped": false,
+    "seconds_to_decide": 2.5
+  },
+  {
+    "participant_id": "u8427698",
+    "invasive_check_done": true,
+    "invasive_detected": true,
+    "weed": "Willow",
+    "api_top_species": "Eucalyptus leucoxylon",
+    "api_score": 0.85,
+    "api_error": "",
+    "override_used": true,
+    "report_tapped": true,
+    "seconds_to_decide": 4.1
+  }
+]
